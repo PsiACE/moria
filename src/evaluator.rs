@@ -93,7 +93,7 @@ impl Environment {
 /// Simple evaluator for Moria expressions
 #[derive(Default)]
 pub struct Evaluator {
-    environment: Environment,
+    pub(crate) environment: Environment,
 }
 
 impl Evaluator {
@@ -387,7 +387,7 @@ impl Evaluator {
     }
     
     /// Evaluate quoted expression
-    fn evaluate_quote(&self, expr: &Expression) -> Result<Value> {
+    pub(crate) fn evaluate_quote(&self, expr: &Expression) -> Result<Value> {
         match expr {
             Expression::Literal { value, .. } => Ok(value.clone()),
             Expression::Variable { name, .. } => Ok(Value::Symbol(name.clone())),
@@ -421,7 +421,7 @@ impl Evaluator {
     }
     
     /// Evaluate arithmetic operation over integers and floats with simple numeric promotion
-    fn arithmetic_op_symbol(&self, symbol: &str, args: &[Value]) -> Result<Value> {
+    pub(crate) fn arithmetic_op_symbol(&self, symbol: &str, args: &[Value]) -> Result<Value> {
         // Handle identity values when no args
         if args.is_empty() {
             return Ok(match symbol {
@@ -533,7 +533,7 @@ impl Evaluator {
         }
     }
 
-    fn is_null_list(&self, args: &[Value]) -> bool {
+    pub(crate) fn is_null_list(&self, args: &[Value]) -> bool {
         if args.len() != 1 { return false; }
         match &args[0] {
             Value::Nil => true,
@@ -542,7 +542,7 @@ impl Evaluator {
         }
     }
 
-    fn builtin_cons(&self, args: &[Value], span: &Span) -> Result<Value> {
+    pub(crate) fn builtin_cons(&self, args: &[Value], span: &Span) -> Result<Value> {
         if args.len() != 2 {
             return Err(MoriaError::Runtime { message: "Expected 2 arguments".to_string(), span: Some(*span), context: None });
         }
@@ -559,7 +559,7 @@ impl Evaluator {
         }
     }
 
-    fn builtin_car(&self, args: &[Value], span: &Span) -> Result<Value> {
+    pub(crate) fn builtin_car(&self, args: &[Value], span: &Span) -> Result<Value> {
         if args.len() != 1 { return Err(MoriaError::Runtime { message: "Expected 1 argument".to_string(), span: Some(*span), context: None }); }
         match &args[0] {
             Value::List(v) if !v.is_empty() => Ok(v[0].clone()),
@@ -568,7 +568,7 @@ impl Evaluator {
         }
     }
 
-    fn builtin_cdr(&self, args: &[Value], span: &Span) -> Result<Value> {
+    pub(crate) fn builtin_cdr(&self, args: &[Value], span: &Span) -> Result<Value> {
         if args.len() != 1 { return Err(MoriaError::Runtime { message: "Expected 1 argument".to_string(), span: Some(*span), context: None }); }
         match &args[0] {
             Value::List(v) if !v.is_empty() => Ok(Value::List(v[1..].to_vec())),
@@ -578,7 +578,7 @@ impl Evaluator {
     }
 
     /// Evaluate numeric comparison operation (two args) supporting ints and floats
-    fn numeric_comparison_op(&self, args: &[Value], op: &str) -> Result<Value> {
+    pub(crate) fn numeric_comparison_op(&self, args: &[Value], op: &str) -> Result<Value> {
         if args.len() != 2 {
             return Err(MoriaError::Runtime { message: "Expected 2 arguments".to_string(), span: None, context: None });
         }
