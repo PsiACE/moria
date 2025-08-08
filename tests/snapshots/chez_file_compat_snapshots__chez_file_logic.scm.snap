@@ -1,0 +1,8 @@
+---
+source: tests/chez_file_compat_snapshots.rs
+expression: snapshot_text
+---
+File: "logic.scm"
+Bin  : chez
+Moria: #t :: Boolean
+Chez : #t

@@ -1,0 +1,8 @@
+---
+source: tests/chez_file_compat_snapshots.rs
+expression: snapshot_text
+---
+File: "lists.scm"
+Bin  : chez
+Moria: (0 1 2) :: List Number
+Chez : (0 1 2)

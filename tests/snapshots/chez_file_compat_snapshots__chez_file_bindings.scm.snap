@@ -1,0 +1,8 @@
+---
+source: tests/chez_file_compat_snapshots.rs
+expression: snapshot_text
+---
+File: "bindings.scm"
+Bin  : chez
+Moria: 3
+Chez : 3

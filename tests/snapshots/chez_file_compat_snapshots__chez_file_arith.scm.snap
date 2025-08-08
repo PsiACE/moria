@@ -1,0 +1,8 @@
+---
+source: tests/chez_file_compat_snapshots.rs
+expression: snapshot_text
+---
+File: "arith.scm"
+Bin  : chez
+Moria: 3 :: Number
+Chez : 3
