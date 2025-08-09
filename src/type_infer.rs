@@ -33,7 +33,9 @@ impl fmt::Display for Type {
             Type::Function(params, ret) => {
                 write!(f, "(")?;
                 for (i, p) in params.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{}", p)?;
                 }
                 write!(f, ") -> {}", ret)
@@ -53,12 +55,20 @@ pub struct Scheme {
 pub struct Subst(HashMap<TypeVarId, Type>);
 
 impl Subst {
-    fn new() -> Self { Self(HashMap::new()) }
-    fn insert(&mut self, var: TypeVarId, ty: Type) { self.0.insert(var, ty); }
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+    fn insert(&mut self, var: TypeVarId, ty: Type) {
+        self.0.insert(var, ty);
+    }
 
     fn apply_type(&self, t: &Type) -> Type {
         match t {
-            Type::Var(v) => self.0.get(v).map(|ty| self.apply_type(ty)).unwrap_or(Type::Var(*v)),
+            Type::Var(v) => self
+                .0
+                .get(v)
+                .map(|ty| self.apply_type(ty))
+                .unwrap_or(Type::Var(*v)),
             Type::List(inner) => Type::List(Box::new(self.apply_type(inner))),
             Type::Function(params, ret) => {
                 let ps = params.iter().map(|p| self.apply_type(p)).collect();
@@ -72,8 +82,12 @@ impl Subst {
     fn compose(&self, other: &Subst) -> Subst {
         // self after other
         let mut result = Subst::new();
-        for (k, v) in &other.0 { result.insert(*k, self.apply_type(v)); }
-        for (k, v) in &self.0 { result.insert(*k, v.clone()); }
+        for (k, v) in &other.0 {
+            result.insert(*k, self.apply_type(v));
+        }
+        for (k, v) in &self.0 {
+            result.insert(*k, v.clone());
+        }
         result
     }
 }
@@ -84,38 +98,99 @@ pub struct TypeEnv {
 }
 
 impl TypeEnv {
-    pub fn new() -> Self { Self { vars: HashMap::new() } }
+    pub fn new() -> Self {
+        Self {
+            vars: HashMap::new(),
+        }
+    }
     pub fn with_prelude() -> Self {
         let mut env = Self::new();
         let a = Type::Var(TypeVarId(0));
 
         // arithmetic: Number -> Number -> Number
-        let num_num_num = Scheme { vars: vec![], ty: Type::Function(vec![Type::Number, Type::Number], Box::new(Type::Number)) };
+        let num_num_num = Scheme {
+            vars: vec![],
+            ty: Type::Function(vec![Type::Number, Type::Number], Box::new(Type::Number)),
+        };
         env.vars.insert("+".to_string(), num_num_num.clone());
         env.vars.insert("-".to_string(), num_num_num.clone());
         env.vars.insert("*".to_string(), num_num_num.clone());
         env.vars.insert("/".to_string(), num_num_num.clone());
 
         // comparisons: Number -> Number -> Boolean
-        let num_num_bool = Scheme { vars: vec![], ty: Type::Function(vec![Type::Number, Type::Number], Box::new(Type::Boolean)) };
+        let num_num_bool = Scheme {
+            vars: vec![],
+            ty: Type::Function(vec![Type::Number, Type::Number], Box::new(Type::Boolean)),
+        };
         for op in ["=", "<", ">", "<=", ">="] {
             env.vars.insert(op.to_string(), num_num_bool.clone());
         }
 
         // list: a ... -> List a (approximate as (a -> List a) for minimal impl)
-        env.vars.insert("list".to_string(), Scheme { vars: vec![TypeVarId(0)], ty: Type::Function(vec![a.clone()], Box::new(Type::List(Box::new(a.clone())))) });
+        env.vars.insert(
+            "list".to_string(),
+            Scheme {
+                vars: vec![TypeVarId(0)],
+                ty: Type::Function(vec![a.clone()], Box::new(Type::List(Box::new(a.clone())))),
+            },
+        );
         // cons: a -> List a -> List a
-        env.vars.insert("cons".to_string(), Scheme { vars: vec![TypeVarId(0)], ty: Type::Function(vec![a.clone(), Type::List(Box::new(a.clone()))], Box::new(Type::List(Box::new(a.clone())))) });
+        env.vars.insert(
+            "cons".to_string(),
+            Scheme {
+                vars: vec![TypeVarId(0)],
+                ty: Type::Function(
+                    vec![a.clone(), Type::List(Box::new(a.clone()))],
+                    Box::new(Type::List(Box::new(a.clone()))),
+                ),
+            },
+        );
         // car: List a -> a
-        env.vars.insert("car".to_string(), Scheme { vars: vec![TypeVarId(0)], ty: Type::Function(vec![Type::List(Box::new(a.clone()))], Box::new(a.clone())) });
+        env.vars.insert(
+            "car".to_string(),
+            Scheme {
+                vars: vec![TypeVarId(0)],
+                ty: Type::Function(vec![Type::List(Box::new(a.clone()))], Box::new(a.clone())),
+            },
+        );
         // cdr: List a -> List a
-        env.vars.insert("cdr".to_string(), Scheme { vars: vec![TypeVarId(0)], ty: Type::Function(vec![Type::List(Box::new(a.clone()))], Box::new(Type::List(Box::new(a.clone())))) });
+        env.vars.insert(
+            "cdr".to_string(),
+            Scheme {
+                vars: vec![TypeVarId(0)],
+                ty: Type::Function(
+                    vec![Type::List(Box::new(a.clone()))],
+                    Box::new(Type::List(Box::new(a.clone()))),
+                ),
+            },
+        );
         // null?: List a -> Boolean
-        env.vars.insert("null?".to_string(), Scheme { vars: vec![TypeVarId(0)], ty: Type::Function(vec![Type::List(Box::new(a.clone()))], Box::new(Type::Boolean)) });
+        env.vars.insert(
+            "null?".to_string(),
+            Scheme {
+                vars: vec![TypeVarId(0)],
+                ty: Type::Function(
+                    vec![Type::List(Box::new(a.clone()))],
+                    Box::new(Type::Boolean),
+                ),
+            },
+        );
         // not: Boolean -> Boolean
-        env.vars.insert("not".to_string(), Scheme { vars: vec![], ty: Type::Function(vec![Type::Boolean], Box::new(Type::Boolean)) });
+        env.vars.insert(
+            "not".to_string(),
+            Scheme {
+                vars: vec![],
+                ty: Type::Function(vec![Type::Boolean], Box::new(Type::Boolean)),
+            },
+        );
         // equal? : a -> a -> Boolean
-        env.vars.insert("equal?".to_string(), Scheme { vars: vec![TypeVarId(0)], ty: Type::Function(vec![a.clone(), a.clone()], Box::new(Type::Boolean)) });
+        env.vars.insert(
+            "equal?".to_string(),
+            Scheme {
+                vars: vec![TypeVarId(0)],
+                ty: Type::Function(vec![a.clone(), a.clone()], Box::new(Type::Boolean)),
+            },
+        );
 
         env
     }
@@ -127,8 +202,14 @@ pub struct Inferencer {
 }
 
 impl Inferencer {
-    pub fn new() -> Self { Self { next_var: 0 } }
-    fn fresh(&mut self) -> Type { let id = self.next_var; self.next_var += 1; Type::Var(TypeVarId(id)) }
+    pub fn new() -> Self {
+        Self { next_var: 0 }
+    }
+    fn fresh(&mut self) -> Type {
+        let id = self.next_var;
+        self.next_var += 1;
+        Type::Var(TypeVarId(id))
+    }
 
     pub fn infer_expression(&mut self, env: &TypeEnv, expr: &Expression) -> Result<Type> {
         let (subst, ty) = self.infer(env, expr)?;
@@ -137,53 +218,76 @@ impl Inferencer {
 
     fn infer(&mut self, env: &TypeEnv, expr: &Expression) -> Result<(Subst, Type)> {
         match expr {
-            Expression::Literal { value, .. } => Ok((Subst::new(), match value {
-                Value::Integer(_) | Value::Float(_) => Type::Number,
-                Value::Boolean(_) => Type::Boolean,
-                Value::String(_) => Type::String,
-                Value::Symbol(_) => Type::Symbol,
-                Value::List(items) => {
-                    if items.is_empty() { Type::List(Box::new(self.fresh())) } else {
-                        // Infer element type from first, no recursion into elements (minimal impl)
-                        match &items[0] {
-                            Value::Integer(_) | Value::Float(_) => Type::List(Box::new(Type::Number)),
-                            Value::Boolean(_) => Type::List(Box::new(Type::Boolean)),
-                            Value::String(_) => Type::List(Box::new(Type::String)),
-                            Value::Symbol(_) => Type::List(Box::new(Type::Symbol)),
-                            Value::Nil => Type::List(Box::new(self.fresh())),
-                            Value::List(_) | Value::Lambda { .. } => Type::List(Box::new(self.fresh())),
+            Expression::Literal { value, .. } => Ok((
+                Subst::new(),
+                match value {
+                    Value::Integer(_) | Value::Float(_) => Type::Number,
+                    Value::Boolean(_) => Type::Boolean,
+                    Value::String(_) => Type::String,
+                    Value::Symbol(_) => Type::Symbol,
+                    Value::List(items) => {
+                        if items.is_empty() {
+                            Type::List(Box::new(self.fresh()))
+                        } else {
+                            // Infer element type from first, no recursion into elements (minimal impl)
+                            match &items[0] {
+                                Value::Integer(_) | Value::Float(_) => {
+                                    Type::List(Box::new(Type::Number))
+                                }
+                                Value::Boolean(_) => Type::List(Box::new(Type::Boolean)),
+                                Value::String(_) => Type::List(Box::new(Type::String)),
+                                Value::Symbol(_) => Type::List(Box::new(Type::Symbol)),
+                                Value::Nil => Type::List(Box::new(self.fresh())),
+                                Value::List(_) | Value::Lambda { .. } => {
+                                    Type::List(Box::new(self.fresh()))
+                                }
+                            }
                         }
                     }
-                }
-                Value::Nil => Type::Nil,
-                Value::Lambda { parameters, body: _, .. } => {
-                    let mut param_types = Vec::new();
-                    for _p in parameters { param_types.push(self.fresh()); }
-                    // Minimal support: infer body as last expression type
-                    let ret = self.fresh();
-                    Type::Function(param_types, Box::new(ret))
-                }
-            })),
+                    Value::Nil => Type::Nil,
+                    Value::Lambda {
+                        parameters,
+                        body: _,
+                        ..
+                    } => {
+                        let mut param_types = Vec::new();
+                        for _p in parameters {
+                            param_types.push(self.fresh());
+                        }
+                        // Minimal support: infer body as last expression type
+                        let ret = self.fresh();
+                        Type::Function(param_types, Box::new(ret))
+                    }
+                },
+            )),
             Expression::Variable { name, .. } => {
                 let ty = self.instantiate(env, name)?;
                 Ok((Subst::new(), ty))
             }
-            Expression::Call { function, arguments, .. } => {
+            Expression::Call {
+                function,
+                arguments,
+                ..
+            } => {
                 // Special-case variadic 'list'
                 if let Expression::Variable { name, .. } = &**function {
                     if name == "list" {
                         let mut subst = Subst::new();
                         // infer all argument types and unify to a single element type
-                        let elem_ty = if arguments.is_empty() { self.fresh() } else { self.fresh() };
+                        let elem_ty = self.fresh();
                         let mut current_elem = elem_ty.clone();
                         for arg in arguments {
                             let (si, ti) = self.infer(env, arg)?;
                             subst = subst.compose(&si);
-                            let si2 = unify(&subst.apply_type(&ti), &subst.apply_type(&current_elem))?;
+                            let si2 =
+                                unify(&subst.apply_type(&ti), &subst.apply_type(&current_elem))?;
                             subst = si2.compose(&subst);
                             current_elem = subst.apply_type(&current_elem);
                         }
-                        return Ok((subst.clone(), Type::List(Box::new(subst.apply_type(&current_elem)))));
+                        return Ok((
+                            subst.clone(),
+                            Type::List(Box::new(subst.apply_type(&current_elem))),
+                        ));
                     }
                 }
 
@@ -201,7 +305,9 @@ impl Inferencer {
                 let subst = s_unify.compose(&subst);
                 Ok((subst.clone(), subst.apply_type(&ret_type)))
             }
-            Expression::Lambda { parameters, body, .. } => {
+            Expression::Lambda {
+                parameters, body, ..
+            } => {
                 // Build param types
                 let param_types: Vec<Type> = parameters.iter().map(|_p| self.fresh()).collect();
                 // Infer body sequentially; minimal: infer last expression type
@@ -211,9 +317,17 @@ impl Inferencer {
                 } else {
                     self.fresh()
                 };
-                Ok((Subst::new(), Type::Function(param_types, Box::new(last_type))))
+                Ok((
+                    Subst::new(),
+                    Type::Function(param_types, Box::new(last_type)),
+                ))
             }
-            Expression::If { condition, then_expr, else_expr, .. } => {
+            Expression::If {
+                condition,
+                then_expr,
+                else_expr,
+                ..
+            } => {
                 let (s1, t1) = self.infer(env, condition)?;
                 let s_bool = unify(&t1, &Type::Boolean)?;
                 let s_pre = s_bool.compose(&s1);
@@ -239,22 +353,37 @@ impl Inferencer {
                 Ok((subst, last_t))
             }
             Expression::Quote { .. } => Ok((Subst::new(), Type::Symbol)),
-            Expression::Define { .. } | Expression::DefineFunction { .. } | Expression::Let { .. } => {
+            Expression::Define { .. }
+            | Expression::DefineFunction { .. }
+            | Expression::Let { .. } => {
                 // Minimal impl: not handling definitions/bindings yet
-                Err(MoriaError::Type { message: "Type inference for define/let not implemented in minimal engine".to_string(), span: Span::default(), context: None })
+                Err(MoriaError::Type {
+                    message: "Type inference for define/let not implemented in minimal engine"
+                        .to_string(),
+                    span: Span::default(),
+                    context: None,
+                })
             }
         }
     }
 
     fn instantiate(&mut self, env: &TypeEnv, name: &str) -> Result<Type> {
-        let scheme = env.vars.get(name).ok_or_else(|| MoriaError::Type { message: format!("Unknown identifier: {}", name), span: Span::default(), context: None })?;
+        let scheme = env.vars.get(name).ok_or_else(|| MoriaError::Type {
+            message: format!("Unknown identifier: {}", name),
+            span: Span::default(),
+            context: None,
+        })?;
         let mut mapping: HashMap<TypeVarId, Type> = HashMap::new();
-        for v in &scheme.vars { mapping.insert(*v, self.fresh()); }
-        Ok(apply_scheme(&scheme, &mapping))
+        for v in &scheme.vars {
+            mapping.insert(*v, self.fresh());
+        }
+        Ok(apply_scheme(scheme, &mapping))
     }
 }
 
-fn apply_scheme(s: &Scheme, map: &HashMap<TypeVarId, Type>) -> Type { apply_type_with_map(&s.ty, map) }
+fn apply_scheme(s: &Scheme, map: &HashMap<TypeVarId, Type>) -> Type {
+    apply_type_with_map(&s.ty, map)
+}
 
 fn apply_type_with_map(t: &Type, map: &HashMap<TypeVarId, Type>) -> Type {
     match t {
@@ -279,7 +408,9 @@ fn occurs(v: TypeVarId, t: &Type) -> bool {
 }
 
 fn unify(t1: &Type, t2: &Type) -> Result<Subst> {
-    if t1 == t2 { return Ok(Subst::new()); }
+    if t1 == t2 {
+        return Ok(Subst::new());
+    }
     match (t1, t2) {
         (Type::Var(v), t) => bind(*v, t),
         (t, Type::Var(v)) => bind(*v, t),
@@ -290,7 +421,13 @@ fn unify(t1: &Type, t2: &Type) -> Result<Subst> {
         (Type::Nil, Type::Nil) => Ok(Subst::new()),
         (Type::List(a), Type::List(b)) => unify(a, b),
         (Type::Function(ps1, r1), Type::Function(ps2, r2)) => {
-            if ps1.len() != ps2.len() { return Err(MoriaError::Type { message: "Function arity mismatch".to_string(), span: Span::default(), context: None }); }
+            if ps1.len() != ps2.len() {
+                return Err(MoriaError::Type {
+                    message: "Function arity mismatch".to_string(),
+                    span: Span::default(),
+                    context: None,
+                });
+            }
             let mut s = Subst::new();
             for (a, b) in ps1.iter().zip(ps2.iter()) {
                 let si = unify(&s.apply_type(a), &s.apply_type(b))?;
@@ -299,13 +436,27 @@ fn unify(t1: &Type, t2: &Type) -> Result<Subst> {
             let sr = unify(&s.apply_type(r1), &s.apply_type(r2))?;
             Ok(sr.compose(&s))
         }
-        _ => Err(MoriaError::Type { message: format!("Cannot unify types: {:?} and {:?}", t1, t2), span: Span::default(), context: None }),
+        _ => Err(MoriaError::Type {
+            message: format!("Cannot unify types: {:?} and {:?}", t1, t2),
+            span: Span::default(),
+            context: None,
+        }),
     }
 }
 
 fn bind(v: TypeVarId, t: &Type) -> Result<Subst> {
-    if let Type::Var(v2) = t { if *v2 == v { return Ok(Subst::new()); } }
-    if occurs(v, t) { return Err(MoriaError::Type { message: "Occurs check failed".to_string(), span: Span::default(), context: None }); }
+    if let Type::Var(v2) = t {
+        if *v2 == v {
+            return Ok(Subst::new());
+        }
+    }
+    if occurs(v, t) {
+        return Err(MoriaError::Type {
+            message: "Occurs check failed".to_string(),
+            span: Span::default(),
+            context: None,
+        });
+    }
     let mut s = Subst::new();
     s.insert(v, t.clone());
     Ok(s)
@@ -317,5 +468,3 @@ pub fn infer_expression_type(expr: &Expression) -> Result<Type> {
     let env = TypeEnv::with_prelude();
     infer.infer_expression(&env, expr)
 }
-
-

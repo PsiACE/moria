@@ -1,7 +1,8 @@
 //! Abstract Syntax Tree definitions for Moria
+use std::fmt;
 
 use crate::error::Span;
-use std::fmt;
+use crate::vm::Environment;
 
 /// A Moria value at compile time
 #[derive(Debug, Clone)]
@@ -17,7 +18,7 @@ pub enum Value {
         function_name: Option<String>,
         parameters: Vec<String>,
         body: Vec<Expression>,
-        env: Option<crate::evaluator::Environment>,
+        env: Option<Environment>,
     },
 }
 
@@ -38,9 +39,14 @@ impl fmt::Display for Value {
                     write!(f, "{}", item)?;
                 }
                 write!(f, ")")
-            },
+            }
             Value::Nil => write!(f, "()"),
-            Value::Lambda { function_name: _, parameters, body: _, env: _ } => {
+            Value::Lambda {
+                function_name: _,
+                parameters,
+                body: _,
+                env: _,
+            } => {
                 write!(f, "#<lambda>(")?;
                 for (i, param) in parameters.iter().enumerate() {
                     if i > 0 {
@@ -49,7 +55,7 @@ impl fmt::Display for Value {
                     write!(f, "{}", param)?;
                 }
                 write!(f, ")")
-            },
+            }
         }
     }
 }
@@ -58,7 +64,7 @@ impl Value {
     pub fn type_name(&self) -> &'static str {
         match self {
             Value::Integer(_) => "Integer",
-            Value::Float(_) => "Float", 
+            Value::Float(_) => "Float",
             Value::Boolean(_) => "Boolean",
             Value::String(_) => "String",
             Value::Symbol(_) => "Symbol",
@@ -90,16 +96,10 @@ impl PartialEq for Value {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     /// Literal values
-    Literal {
-        value: Value,
-        span: Span,
-    },
+    Literal { value: Value, span: Span },
 
     /// Variable reference
-    Variable {
-        name: String,
-        span: Span,
-    },
+    Variable { name: String, span: Span },
 
     /// Function call (operator application)
     Call {
@@ -186,13 +186,13 @@ pub struct TypeAnnotation {
 pub enum TypeExpression {
     /// Named type (e.g., Integer, String)
     Named(String),
-    
+
     /// Function type (e.g., Integer -> String)
     Function {
         parameters: Vec<TypeExpression>,
         return_type: Box<TypeExpression>,
     },
-    
+
     /// Type variable (e.g., 'a)
     TypeVar(String),
 }
@@ -221,46 +221,46 @@ impl Expression {
             span,
         }
     }
-    
+
     pub fn float(value: f64, span: Span) -> Self {
         Self::Literal {
             value: Value::Float(value),
             span,
         }
     }
-    
+
     pub fn boolean(value: bool, span: Span) -> Self {
         Self::Literal {
             value: Value::Boolean(value),
             span,
         }
     }
-    
+
     pub fn string(value: String, span: Span) -> Self {
         Self::Literal {
             value: Value::String(value),
             span,
         }
     }
-    
+
     pub fn symbol(value: String, span: Span) -> Self {
         Self::Literal {
             value: Value::Symbol(value),
             span,
         }
     }
-    
+
     pub fn nil(span: Span) -> Self {
         Self::Literal {
             value: Value::Nil,
             span,
         }
     }
-    
+
     pub fn variable(name: String, span: Span) -> Self {
         Self::Variable { name, span }
     }
-    
+
     pub fn call(function: Expression, arguments: Vec<Expression>, span: Span) -> Self {
         Self::Call {
             function: Box::new(function),
@@ -268,7 +268,7 @@ impl Expression {
             span,
         }
     }
-    
+
     pub fn lambda(parameters: Vec<Parameter>, body: Vec<Expression>, span: Span) -> Self {
         Self::Lambda {
             parameters,
@@ -276,8 +276,13 @@ impl Expression {
             span,
         }
     }
-    
-    pub fn if_expr(condition: Expression, then_expr: Expression, else_expr: Option<Expression>, span: Span) -> Self {
+
+    pub fn if_expr(
+        condition: Expression,
+        then_expr: Expression,
+        else_expr: Option<Expression>,
+        span: Span,
+    ) -> Self {
         Self::If {
             condition: Box::new(condition),
             then_expr: Box::new(then_expr),
@@ -285,18 +290,18 @@ impl Expression {
             span,
         }
     }
-    
+
     pub fn begin(expressions: Vec<Expression>, span: Span) -> Self {
         Self::Begin { expressions, span }
     }
-    
+
     pub fn quote(expression: Expression, span: Span) -> Self {
         Self::Quote {
             expression: Box::new(expression),
             span,
         }
     }
-    
+
     pub fn define(name: String, value: Expression, span: Span) -> Self {
         Self::Define {
             name,
@@ -304,7 +309,7 @@ impl Expression {
             span,
         }
     }
-    
+
     pub fn span(&self) -> &Span {
         match self {
             Expression::Literal { span, .. } => span,
@@ -319,4 +324,4 @@ impl Expression {
             Expression::Quote { span, .. } => span,
         }
     }
-} 
+}

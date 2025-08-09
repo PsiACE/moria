@@ -1,11 +1,13 @@
-use moria::{parse_expression, Evaluator, infer_expression_type};
+use moria::{evaluate_expr_vm, infer_expression_type, parse_expression};
 
 fn eval(src: &str) -> String {
     let expr = parse_expression(src).unwrap();
-    let mut ev = Evaluator::with_stdlib();
-    let val = ev.evaluate(&expr).unwrap();
+    let val = evaluate_expr_vm(&expr).unwrap();
     let ty = infer_expression_type(&expr).ok();
-    match ty { Some(t) => format!("{} :: {}", val, t), None => format!("{}", val) }
+    match ty {
+        Some(t) => format!("{} :: {}", val, t),
+        None => format!("{}", val),
+    }
 }
 
 #[test]
@@ -37,5 +39,3 @@ fn snapshot_equal_and_not() {
     let out = eval("(not #t)");
     insta::assert_snapshot!(out, @"#f :: Boolean");
 }
-
-

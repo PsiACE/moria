@@ -24,28 +24,28 @@ pub enum MoriaError {
         span: Span,
         context: Option<String>,
     },
-    
+
     #[error("Type error: {message}")]
     Type {
         message: String,
         span: Span,
         context: Option<String>,
     },
-    
+
     #[error("Runtime error: {message}")]
     Runtime {
         message: String,
         span: Option<Span>,
         context: Option<String>,
     },
-    
+
     #[error("Compilation error: {message}")]
     Compilation {
         message: String,
         span: Option<Span>,
         context: Option<String>,
     },
-    
+
     #[error("{0}")]
     Generic(String),
 }
@@ -60,4 +60,4 @@ pub struct ErrorContext {
     pub line: Option<usize>,
     pub column: Option<usize>,
     pub annotation: Option<String>,
-} 
+}

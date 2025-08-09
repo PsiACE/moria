@@ -3,7 +3,7 @@ name = "moria"
 version = "0.1.0"
 edition = "2021"
 description = "A minimal implementation of the Moria language"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Chojan Shang <psiace@apache.org>"]
 
 [dependencies]
 # Parser combinators
@@ -17,9 +17,6 @@ clap = { version = "4.3", features = ["derive"] }
 
 # Async runtime
 tokio = { version = "1.28", features = ["full"] }
-
-# WebAssembly
-wasmtime = "12.0"
 
 [dev-dependencies]
 # Testing

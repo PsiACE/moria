@@ -1,4 +1,4 @@
-use moria::{parse_expression, infer_expression_type};
+use moria::{infer_expression_type, parse_expression};
 
 #[test]
 fn infer_literals_and_simple_calls() {
@@ -27,5 +27,3 @@ fn infer_list_functions() {
     let t = infer_expression_type(&parse_expression("(null? (list 1 2))").unwrap()).unwrap();
     insta::assert_snapshot!(format!("{:?}", t), @"Boolean");
 }
-
-
